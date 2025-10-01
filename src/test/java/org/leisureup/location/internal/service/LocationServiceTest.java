@@ -58,6 +58,7 @@ class LocationServiceTest {
     LocationFetchService locationFetchService;
 
 
+    // classpath 에서 파일을 읽어 byte 로 제공
     private static byte[] supplyResponse(Long locationId) {
 
         String classPath = String.format(
@@ -75,6 +76,7 @@ class LocationServiceTest {
         }
     }
 
+    // api 응답을 stub
     void stubMockServer(Long locationId) {
 
         byte[] body = supplyResponse(locationId);
@@ -104,9 +106,10 @@ class LocationServiceTest {
     void setUp() {
         wireMockServer.start();
 
-        stubMockServer(apiExistingLocationId);
-        stubMockServer(apiNonExistentLocationId);
+        stubMockServer(apiExistingLocationId);      // api 상 정보 있는 경우 stub
+        stubMockServer(apiNonExistentLocationId);   // api 상 정보 없는 경우 stub
 
+        // DB 에 정보 있는 경우 setup
         Category cat = CatOther.of("testing", "abcde");
         categoryRepo.save(cat);
 

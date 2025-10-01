@@ -3,10 +3,9 @@
 <configuration>
 
   <include resource="logback/base.xml"/>
-
   <include resource="logback/logger/file-logger.xml"/>
-
   <include resource="logback/logger/discord-error-logger.xml"/>
+
   <root level="info">
     <appender-ref ref="CONSOLE"/>
   </root>

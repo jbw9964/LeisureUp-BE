@@ -60,8 +60,15 @@ public class AppleOidcHelper {
         );
     }
 
+    /**
+     * ID token (jwt) header 에서 kid 값을 가져온다.
+     *
+     * <li>참고로 JJWT 옛 버전에선 라이브러리에서 가능했지만 프로젝트에 적용된 버전은 불가능하도록 바뀌었다. 그래서 걍 직접 Base64 디코딩해서
+     * 가져온다.</li>
+     */
     public String getKidClaimsFrom(String idToken) {
 
+        // jwt header 내용을 가져온다.
         JsonNode headerNode = getHeaderNodeFrom(idToken);
         JsonNode kidValNode = headerNode.get(KID);
 
@@ -77,6 +84,19 @@ public class AppleOidcHelper {
         return kid;
     }
 
+    /**
+     * 주어진 정보로 ID token 을 검증한다.
+     * <p>
+     * Apple 문서에 따르면 다음 내용을 확인하라 칸다.
+     *
+     * <li>JWS 시그니처가 Apple OIDC public key 와 맞는지</li>
+     * <li>{@code iss} 가 Apple 이 맞는지</li>
+     * <li>{@code aud} 가 우리의 {@code client_id} 와 동일한지</li>
+     * <li>토큰 발금 때 사용한 {@code nonce} 가 동일한지</li>
+     * <li>토큰이 만료 되었는지</li>
+     * <p>
+     * 시간 없어서 {@code aud}, {@code nonce} 검증은 스킵...
+     */
     public OAuthResponse getVerifiedInfoFrom(
             String idToken, String modulus, String exponent
     ) {

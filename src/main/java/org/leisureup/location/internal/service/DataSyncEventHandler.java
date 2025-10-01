@@ -33,6 +33,26 @@ public class DataSyncEventHandler {
         location.synchronizeTo(info.modifiedTime());
     }
 
+    /**
+     * 해당 장소가 API 상 수정되었는지 확인하는 method
+     * <li>
+     * 만약 정보가 수정 되었다면 : {@link #handleDataSyncEvent}
+     * <br>
+     * 장소 정보를 update 하는 이벤트 {@code (DataSyncEvent)} 발행
+     * </li>
+     *
+     * <br>
+     *
+     * <li>
+     * 만약 정보가 그대로라면 : {@link #handleUpdateLastSyncTimeEvent}
+     * <br>
+     * 마지막 확인 기록만 update 하는 이벤트 {@code (UpdateLastSyncTimeEvent)} 발행
+     * </li>
+     *
+     * @param event 장소 수정이 필요한지 확인하는 event
+     * @see #handleDataSyncEvent
+     * @see #handleUpdateLastSyncTimeEvent
+     */
     @Async
     @EventListener(DataSyncCheckEvent.class)
     public void handleSyncCheckEvent(DataSyncCheckEvent event) {
@@ -57,6 +77,9 @@ public class DataSyncEventHandler {
         eventPublisher.publishEvent(nextEvent);
     }
 
+    /**
+     * 해당 장소의 마지막 동기화 기록만 update 하는 method
+     */
     @ApplicationModuleListener(propagation = Propagation.REQUIRES_NEW)
     public void handleUpdateLastSyncTimeEvent(UpdateLastSyncTimeEvent event) {
 
@@ -66,9 +89,12 @@ public class DataSyncEventHandler {
 
         locationRepo.updateModifiedTimeFor(locationId);
 
-        log.info("Updated last syn time.");
+        log.info("Updated last syn time.");     // 사실 벌크성 jpql 도 tx 커밋되야 반영되긴 한다.
     }
 
+    /**
+     * 해당 장소의 정보를 update 하는 method
+     */
     @ApplicationModuleListener(propagation = Propagation.REQUIRES_NEW)
     public void handleDataSyncEvent(DataSyncEvent event) {
 
@@ -76,6 +102,7 @@ public class DataSyncEventHandler {
 
         log.info("Data sync event for location [{}] has been received", locationId);
 
+        // DB 저장된 장소를 가져온다.
         Location target = locationRepo.findById(locationId)
                 .orElseThrow(() -> {
                     String msg = String.format(
@@ -88,15 +115,18 @@ public class DataSyncEventHandler {
 
         CommonInfo replace;
 
+        // 수정할 정보가 cache 에 남아있으면 가져오고
         Optional<CommonInfoCache> cache = commonInfoCacheRepo.findById(locationId);
 
         if (cache.isPresent()) {
             replace = cache.get().getInfo();
             commonInfoCacheRepo.delete(cache.get());
         } else {
+            // 없으면 API 써서 가져온다.
             replace = tourApiService.getCommonInfo(locationId);
         }
 
+        // 정보를 수정한다.
         changeEntityInfo(target, replace);
 
         log.info("Data will be changed after transaction commit.");
